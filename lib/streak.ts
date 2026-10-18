@@ -29,7 +29,7 @@ export function getYesterdayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
-const DEFAULT_STREAK: StreakData = {
+export const DEFAULT_STREAK: StreakData = {
   currentStreak: 0,
   bestStreak: 0,
   freezesHeld: 1, // 1 starter freeze

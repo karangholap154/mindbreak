@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { loadStreakData, STREAK_CHANGE_EVENT, StreakData } from "@/lib/streak";
+import { loadStreakData, DEFAULT_STREAK, STREAK_CHANGE_EVENT, StreakData } from "@/lib/streak";
 
 function subscribe(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -16,13 +16,13 @@ function subscribe(callback: () => void) {
 }
 
 let cachedRaw: string | null = null;
-let cachedData: StreakData | null = null;
+let cachedData: StreakData = DEFAULT_STREAK;
 
 function getSnapshot(): StreakData {
-  if (typeof window === "undefined") return loadStreakData();
+  if (typeof window === "undefined") return DEFAULT_STREAK;
 
   const currentRaw = localStorage.getItem("mindbreak_streak_data") || "";
-  if (currentRaw !== cachedRaw || !cachedData) {
+  if (currentRaw !== cachedRaw) {
     cachedRaw = currentRaw;
     cachedData = loadStreakData();
   }
@@ -30,7 +30,7 @@ function getSnapshot(): StreakData {
 }
 
 function getServerSnapshot(): StreakData {
-  return loadStreakData();
+  return DEFAULT_STREAK;
 }
 
 export function useStreak(): StreakData {
