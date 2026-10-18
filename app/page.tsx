@@ -68,7 +68,7 @@ export default function Home() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
               <Link
-                href="/games"
+                href="/play/make24"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-acc text-ink font-bold text-[17px] shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <span>Play today’s round</span>
@@ -202,9 +202,12 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Game 1: Make-24 */}
-            <div className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
+            <Link
+              href="/play/make24"
+              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+            >
               <div>
-                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6">
+                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Hash className="w-5 h-5 text-acc" />
                 </div>
                 <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
@@ -217,9 +220,9 @@ export default function Home() {
               </div>
               <div className="mt-6 pt-4 border-t border-line flex items-center justify-between text-[13px] font-mono">
                 <span className="text-mute">Target: 24</span>
-                <span className="text-acc font-semibold">Playable</span>
+                <span className="text-acc font-semibold group-hover:underline">Play now →</span>
               </div>
-            </div>
+            </Link>
 
             {/* Game 2: Mini Sudoku */}
             <div className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
