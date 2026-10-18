@@ -225,9 +225,12 @@ export default function Home() {
             </Link>
 
             {/* Game 2: Mini Sudoku */}
-            <div className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
+            <Link
+              href="/play/sudoku4"
+              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+            >
               <div>
-                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6">
+                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Grid3X3 className="w-5 h-5 text-acc" />
                 </div>
                 <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
@@ -240,14 +243,17 @@ export default function Home() {
               </div>
               <div className="mt-6 pt-4 border-t border-line flex items-center justify-between text-[13px] font-mono">
                 <span className="text-mute">Grid: 4×4</span>
-                <span className="text-mute">Step 3</span>
+                <span className="text-acc font-semibold group-hover:underline">Play now →</span>
               </div>
-            </div>
+            </Link>
 
             {/* Game 3: Pattern Recall */}
-            <div className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
+            <Link
+              href="/play/pattern-recall"
+              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+            >
               <div>
-                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6">
+                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Brain className="w-5 h-5 text-acc" />
                 </div>
                 <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
@@ -260,14 +266,17 @@ export default function Home() {
               </div>
               <div className="mt-6 pt-4 border-t border-line flex items-center justify-between text-[13px] font-mono">
                 <span className="text-mute">Growing levels</span>
-                <span className="text-mute">Step 3</span>
+                <span className="text-acc font-semibold group-hover:underline">Play now →</span>
               </div>
-            </div>
+            </Link>
 
             {/* Game 4: Stroop Test */}
-            <div className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
+            <Link
+              href="/play/stroop"
+              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+            >
               <div>
-                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6">
+                <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Zap className="w-5 h-5 text-acc" />
                 </div>
                 <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
@@ -280,9 +289,9 @@ export default function Home() {
               </div>
               <div className="mt-6 pt-4 border-t border-line flex items-center justify-between text-[13px] font-mono">
                 <span className="text-mute">Color reflex</span>
-                <span className="text-mute">Step 3</span>
+                <span className="text-acc font-semibold group-hover:underline">Play now →</span>
               </div>
-            </div>
+            </Link>
           </div>
         </section>
 

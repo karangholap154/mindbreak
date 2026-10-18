@@ -225,6 +225,16 @@ export function GameShell({ game }: GameShellProps) {
                   disabled={store.status !== "playing"}
                 />
               </div>
+
+              {/* Optional Finish Early button once at least 1 puzzle is solved */}
+              {store.puzzlesSolved > 0 && (
+                <button
+                  onClick={() => store.finishRound()}
+                  className="mt-4 px-4 py-1.5 rounded-full border border-line bg-card hover:bg-surface text-mute hover:text-ink font-mono text-[12px] transition-all cursor-pointer"
+                >
+                  Finish round & view results
+                </button>
+              )}
             </div>
           )}
         </section>
