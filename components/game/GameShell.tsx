@@ -18,14 +18,29 @@ export function GameShell({ game }: GameShellProps) {
   const [currentPuzzle, setCurrentPuzzle] = useState(() => game.generate("today-seed", 0));
   const [isWindowFocused, setIsWindowFocused] = useState(true);
 
-  // Automatically record play time when round finishes
+  // Automatically record play time when round finishes & submit score to Supabase
   const status = store.status;
   const result = store.result;
   useEffect(() => {
     if (status === "finished" && result) {
       recordPlayTime(result.secondsPlayed);
+
+      // Submit score to backend
+      fetch("/api/scores/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameId: game.id,
+          score: result.score,
+          puzzlesSolved: result.puzzlesSolved,
+          accuracy: result.accuracy,
+          secondsPlayed: result.secondsPlayed,
+        }),
+      }).catch((err) => {
+        console.warn("Could not sync score with server:", err);
+      });
     }
-  }, [status, result]);
+  }, [status, result, game.id]);
 
   // Initialize store when game prop changes
   const activeGameId = store.activeGame?.id;

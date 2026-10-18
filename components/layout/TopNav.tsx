@@ -6,11 +6,15 @@ import { Flame, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
 import { useStreak } from "@/hooks/useStreak";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 export function TopNav() {
   const pathname = usePathname();
   const [muted, setMuted] = useState(true);
+  const [authOpen, setAuthOpen] = useState(false);
   const streak = useStreak();
+  const { user, profile } = useAuth();
 
   const links = [
     { href: "/", label: "Today" },
@@ -87,13 +91,18 @@ export function TopNav() {
 
           {/* Avatar (40px circle, lime fill, ink initial per DESIGN.md §6.10) */}
           <button
-            className="w-10 h-10 rounded-full bg-lime text-ink font-bold text-[15px] flex items-center justify-center border border-line hover:scale-105 active:scale-95 transition-transform"
-            aria-label="User Profile"
+            onClick={() => setAuthOpen(true)}
+            className="w-10 h-10 rounded-full bg-lime text-ink font-bold text-[15px] flex items-center justify-center border border-line hover:scale-105 active:scale-95 transition-transform cursor-pointer shadow-xs"
+            aria-label={user ? "View Account Profile" : "Sign In or Create Account"}
+            title={user ? `Signed in as ${profile?.displayName || user.email}` : "Guest Player (Click to Sign In)"}
           >
-            G
+            {user ? (profile?.avatarInitial || "P") : "G"}
           </button>
         </div>
       </div>
+
+      {/* Supabase Authentication Modal */}
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </header>
   );
 }
