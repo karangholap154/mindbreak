@@ -17,6 +17,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+import { useMounted } from "@/hooks/useMounted";
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,19 +35,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
   const supabase = createClient();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Reset form errors when switching modes or closing
-  useEffect(() => {
+  const switchMode = (newMode: "signin" | "signup") => {
+    setMode(newMode);
     setErrorMsg(null);
     setSuccessMsg(null);
-  }, [mode, isOpen]);
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -187,7 +185,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="flex items-center p-1 rounded-full bg-surface border border-line mb-6 max-w-[280px]">
               <button
                 type="button"
-                onClick={() => setMode("signin")}
+                onClick={() => switchMode("signin")}
                 className={`flex-1 py-1.5 rounded-full font-mono text-[12px] font-semibold uppercase tracking-wider transition-all cursor-pointer ${
                   mode === "signin"
                     ? "bg-ink text-surface shadow-xs"
@@ -198,7 +196,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setMode("signup")}
+                onClick={() => switchMode("signup")}
                 className={`flex-1 py-1.5 rounded-full font-mono text-[12px] font-semibold uppercase tracking-wider transition-all cursor-pointer ${
                   mode === "signup"
                     ? "bg-ink text-surface shadow-xs"
@@ -366,7 +364,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   Don&apos;t have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => setMode("signup")}
+                    onClick={() => switchMode("signup")}
                     className="font-semibold text-ink underline hover:text-acc transition-colors cursor-pointer"
                   >
                     Sign up now
@@ -377,7 +375,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => setMode("signin")}
+                    onClick={() => switchMode("signin")}
                     className="font-semibold text-ink underline hover:text-acc transition-colors cursor-pointer"
                   >
                     Sign in

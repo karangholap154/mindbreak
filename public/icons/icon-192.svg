@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="42" fill="#0E1411"/>
+  <!-- Stopwatch ticks ring -->
+  <g transform="translate(96, 96)">
+    <!-- 60 ticks -->
+    <circle cx="0" cy="0" r="76" fill="none" stroke="#2A3830" stroke-width="1"/>
+    <!-- Quarter major ticks -->
+    <line x1="0" y1="-76" x2="0" y2="-62" stroke="#FF5A2B" stroke-width="4" stroke-linecap="round"/>
+    <line x1="76" y1="0" x2="62" y2="0" stroke="#CFEA6B" stroke-width="3" stroke-linecap="round"/>
+    <line x1="0" y1="76" x2="0" y2="62" stroke="#CFEA6B" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-76" y1="0" x2="-62" y2="0" stroke="#CFEA6B" stroke-width="3" stroke-linecap="round"/>
+    <!-- Orange active dot at 12 o clock -->
+    <circle cx="0" cy="-60" r="4.5" fill="#FF5A2B"/>
+    <!-- 60 Text in center -->
+    <text x="0" y="10" text-anchor="middle" font-family="monospace, sans-serif" font-weight="900" font-size="44" fill="#F4F6F0" letter-spacing="-2">60</text>
+  </g>
+</svg>

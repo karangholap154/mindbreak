@@ -149,16 +149,21 @@ export default function RewardsPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-line flex items-center justify-between">
-                    {isUnlocked ? (
-                      m.type === "physical" ? (
-                        <button className="px-4 py-2 rounded-full bg-acc text-ink font-bold text-[13px] shadow-xs hover:opacity-95 cursor-pointer">
-                          Claim Delivery
-                        </button>
-                      ) : (
-                        <span className="font-mono text-[12px] text-lime-ink font-bold">
-                          Active in profile
-                        </span>
-                      )
+                    {m.type === "physical" ? (
+                      <Link
+                        href={`/rewards/claim?milestone=${m.day}`}
+                        className={`px-4 py-1.5 rounded-full font-mono text-[12px] font-bold transition-all cursor-pointer inline-flex items-center gap-1 ${
+                          isUnlocked
+                            ? "bg-acc text-ink shadow-xs hover:opacity-95"
+                            : "bg-surface border border-line text-mute hover:text-ink"
+                        }`}
+                      >
+                        <span>{isUnlocked ? "Claim Delivery" : "Preview Prize"}</span>
+                      </Link>
+                    ) : isUnlocked ? (
+                      <span className="font-mono text-[12px] text-lime-ink font-bold">
+                        Active in profile
+                      </span>
                     ) : (
                       <span className="font-mono text-[12px] text-mute">
                         Keep streak to claim
