@@ -7,9 +7,18 @@ import { TopNav } from "@/components/layout/TopNav";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TickRing } from "@/components/brand/TickRing";
 import { useStreak } from "@/hooks/useStreak";
+import { getDailyFeaturedGame } from "@/lib/dailySeed";
+import { getGamePlugin } from "@/games/registry";
 
 export default function Home() {
   const streak = useStreak();
+  const [featuredGameId, setFeaturedGameId] = useState<string>("make24");
+
+  useEffect(() => {
+    setFeaturedGameId(getDailyFeaturedGame());
+  }, []);
+
+  const featuredGame = getGamePlugin(featuredGameId);
   // Interactive test timer for the signature 60-tick stopwatch ring
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -70,7 +79,7 @@ export default function Home() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
               <Link
-                href="/play/make24"
+                href={`/play/${featuredGameId}`}
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-acc text-ink font-bold text-[17px] shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <span>Play today’s round</span>
@@ -177,9 +186,12 @@ export default function Home() {
 
               {/* Active Game Info */}
               <div className="w-full mt-6 pt-5 border-t border-line text-center">
-                <p className="font-display font-bold text-[18px] text-ink">Make-24</p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-lime/20 border border-lime-ink/30 text-lime-ink font-mono text-[11px] font-semibold uppercase tracking-wider mb-1">
+                  Featured Today
+                </div>
+                <p className="font-display font-bold text-[18px] text-ink">{featuredGame?.name || "Daily Reset"}</p>
                 <p className="font-body text-[13px] text-mute mt-0.5">
-                  Combine 4 numbers with arithmetic to hit 24 before time expires
+                  {featuredGame?.rules || "Micro-game calibrated for a 60-second reset"}
                 </p>
               </div>
             </div>
@@ -206,15 +218,24 @@ export default function Home() {
             {/* Game 1: Make-24 */}
             <Link
               href="/play/make24"
-              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+              className={`p-7 rounded-[28px] bg-card border flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group relative ${
+                featuredGameId === "make24" ? "border-acc ring-2 ring-acc/20" : "border-line"
+              }`}
             >
               <div>
                 <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Hash className="w-5 h-5 text-acc" />
                 </div>
-                <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
-                  Math · Today’s pick
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-mute uppercase tracking-wider block">
+                    Math
+                  </span>
+                  {featuredGameId === "make24" && (
+                    <span className="px-2 py-0.5 rounded-full bg-acc text-ink font-mono text-[10px] font-bold uppercase tracking-wider">
+                      Today’s pick
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-display font-bold text-[22px] text-ink mb-2">Make-24</h3>
                 <p className="font-body text-[14px] text-mute leading-relaxed">
                   Combine four numbers using +, −, ×, and ÷ to equal exactly 24.
@@ -229,15 +250,24 @@ export default function Home() {
             {/* Game 2: Mini Sudoku */}
             <Link
               href="/play/sudoku4"
-              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+              className={`p-7 rounded-[28px] bg-card border flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group relative ${
+                featuredGameId === "sudoku4" ? "border-acc ring-2 ring-acc/20" : "border-line"
+              }`}
             >
               <div>
                 <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Grid3X3 className="w-5 h-5 text-acc" />
                 </div>
-                <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
-                  Puzzle · Logic
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-mute uppercase tracking-wider block">
+                    Puzzle · Logic
+                  </span>
+                  {featuredGameId === "sudoku4" && (
+                    <span className="px-2 py-0.5 rounded-full bg-acc text-ink font-mono text-[10px] font-bold uppercase tracking-wider">
+                      Today’s pick
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-display font-bold text-[22px] text-ink mb-2">Mini Sudoku</h3>
                 <p className="font-body text-[14px] text-mute leading-relaxed">
                   Rapid-fire 4×4 Sudoku grids. Fill missing digits 1–4 without repeats.
@@ -252,15 +282,24 @@ export default function Home() {
             {/* Game 3: Pattern Recall */}
             <Link
               href="/play/pattern-recall"
-              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+              className={`p-7 rounded-[28px] bg-card border flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group relative ${
+                featuredGameId === "pattern-recall" ? "border-acc ring-2 ring-acc/20" : "border-line"
+              }`}
             >
               <div>
                 <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Brain className="w-5 h-5 text-acc" />
                 </div>
-                <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
-                  Memory · Sequence
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-mute uppercase tracking-wider block">
+                    Memory · Sequence
+                  </span>
+                  {featuredGameId === "pattern-recall" && (
+                    <span className="px-2 py-0.5 rounded-full bg-acc text-ink font-mono text-[10px] font-bold uppercase tracking-wider">
+                      Today’s pick
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-display font-bold text-[22px] text-ink mb-2">Pattern Recall</h3>
                 <p className="font-body text-[14px] text-mute leading-relaxed">
                   Watch the flashing tile sequence and repeat it accurately as it extends.
@@ -275,15 +314,24 @@ export default function Home() {
             {/* Game 4: Stroop Test */}
             <Link
               href="/play/stroop"
-              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group"
+              className={`p-7 rounded-[28px] bg-card border flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all cursor-pointer group relative ${
+                featuredGameId === "stroop" ? "border-acc ring-2 ring-acc/20" : "border-line"
+              }`}
             >
               <div>
                 <div className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
                   <Zap className="w-5 h-5 text-acc" />
                 </div>
-                <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
-                  Reflex · Focus
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-[11px] text-mute uppercase tracking-wider block">
+                    Reflex · Focus
+                  </span>
+                  {featuredGameId === "stroop" && (
+                    <span className="px-2 py-0.5 rounded-full bg-acc text-ink font-mono text-[10px] font-bold uppercase tracking-wider">
+                      Today’s pick
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-display font-bold text-[22px] text-ink mb-2">Stroop Test</h3>
                 <p className="font-body text-[14px] text-mute leading-relaxed">
                   Tap the font color of the word, not what the word reads. Reflex speed test.

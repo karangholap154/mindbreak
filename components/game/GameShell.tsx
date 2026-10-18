@@ -7,6 +7,7 @@ import { useGameStore } from "@/games/store";
 import { TickRing } from "@/components/brand/TickRing";
 import { ResultScreen } from "./ResultScreen";
 import { recordPlayTime } from "@/lib/streak";
+import { getDailyGameSeed, getTodayDateString } from "@/lib/dailySeed";
 
 interface GameShellProps {
   game: AnyGamePlugin;
@@ -14,9 +15,23 @@ interface GameShellProps {
 
 export function GameShell({ game }: GameShellProps) {
   const store = useGameStore();
+  const [dailySeed, setDailySeed] = useState<string>(() =>
+    getDailyGameSeed(game.id, "2026-01-01")
+  );
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
-  const [currentPuzzle, setCurrentPuzzle] = useState(() => game.generate("today-seed", 0));
+  const [currentPuzzle, setCurrentPuzzle] = useState(() =>
+    game.generate(getDailyGameSeed(game.id, "2026-01-01"), 0)
+  );
   const [isWindowFocused, setIsWindowFocused] = useState(true);
+
+  // Set real daily seed on client mount
+  useEffect(() => {
+    const today = getTodayDateString();
+    const realSeed = getDailyGameSeed(game.id, today);
+    setDailySeed(realSeed);
+    setCurrentPuzzle(game.generate(realSeed, 0));
+    setCurrentPuzzleIndex(0);
+  }, [game]);
 
   // Automatically record play time when round finishes & submit score to Supabase
   const status = store.status;
@@ -48,8 +63,10 @@ export function GameShell({ game }: GameShellProps) {
   useEffect(() => {
     if (activeGameId !== game.id) {
       initGame(game);
+      setCurrentPuzzleIndex(0);
+      setCurrentPuzzle(game.generate(dailySeed, 0));
     }
-  }, [game, activeGameId, initGame]);
+  }, [game, activeGameId, initGame, dailySeed]);
 
   // Window blur / focus listeners (Pause on blur UX)
   useEffect(() => {
@@ -101,14 +118,14 @@ export function GameShell({ game }: GameShellProps) {
     // Advance to next puzzle
     const nextIdx = currentPuzzleIndex + 1;
     setCurrentPuzzleIndex(nextIdx);
-    setCurrentPuzzle(game.generate("today-seed", nextIdx));
+    setCurrentPuzzle(game.generate(dailySeed, nextIdx));
   };
 
   const handleSkip = () => {
     store.recordError(10);
     const nextIdx = currentPuzzleIndex + 1;
     setCurrentPuzzleIndex(nextIdx);
-    setCurrentPuzzle(game.generate("today-seed", nextIdx));
+    setCurrentPuzzle(game.generate(dailySeed, nextIdx));
   };
 
   const handleStartRound = () => {
@@ -118,7 +135,7 @@ export function GameShell({ game }: GameShellProps) {
   const handleReplay = () => {
     store.resetRound();
     setCurrentPuzzleIndex(0);
-    setCurrentPuzzle(game.generate("today-seed", 0));
+    setCurrentPuzzle(game.generate(dailySeed, 0));
     store.startPlaying();
   };
 

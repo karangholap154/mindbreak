@@ -10,7 +10,7 @@ const GAME_TABS = [
   { id: "all", label: "All Games" },
   { id: "make24", label: "Make-24" },
   { id: "sudoku4", label: "Mini Sudoku" },
-  { id: "patternRecall", label: "Pattern Recall" },
+  { id: "pattern-recall", label: "Pattern Recall" },
   { id: "stroop", label: "Stroop Test" },
 ];
 

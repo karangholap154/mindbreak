@@ -1,16 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Brain, Grid3X3, Hash, Zap, Sparkles } from "lucide-react";
 import { TopNav } from "@/components/layout/TopNav";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { getAllGames } from "@/games/registry";
 import { GameCategory } from "@/games/types";
+import { getDailyFeaturedGame } from "@/lib/dailySeed";
 
 export default function GamesPage() {
   const [selectedCategory, setSelectedCategory] = useState<"all" | GameCategory>("all");
   const games = getAllGames();
+  const [featuredGameId, setFeaturedGameId] = useState<string>("make24");
+
+  useEffect(() => {
+    setFeaturedGameId(getDailyFeaturedGame());
+  }, []);
 
   const filteredGames =
     selectedCategory === "all"
@@ -82,31 +88,42 @@ export default function GamesPage() {
 
         {/* Games Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredGames.map((game) => (
-            <div
-              key={game.id}
-              className="p-7 rounded-[28px] bg-card border border-line flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all shadow-sm"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-full bg-surface border border-line flex items-center justify-center shadow-xs">
-                    {getIcon(game.category)}
+          {filteredGames.map((game) => {
+            const isFeatured = game.id === featuredGameId;
+            return (
+              <div
+                key={game.id}
+                className={`p-7 rounded-[28px] bg-card border flex flex-col justify-between hover:-translate-y-1 hover:border-ink/30 transition-all shadow-sm relative ${
+                  isFeatured ? "border-acc ring-2 ring-acc/20 bg-card" : "border-line"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-12 h-12 rounded-full bg-surface border border-line flex items-center justify-center shadow-xs">
+                      {getIcon(game.category)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isFeatured && (
+                        <span className="px-2.5 py-1 rounded-full bg-acc text-ink font-mono text-[10px] font-bold uppercase tracking-wider">
+                          Today’s pick
+                        </span>
+                      )}
+                      <span className="px-3 py-1 rounded-full bg-surface border border-line font-mono text-[11px] text-mute uppercase tracking-wider">
+                        {game.durationSeconds}s
+                      </span>
+                    </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-surface border border-line font-mono text-[11px] text-mute uppercase tracking-wider">
-                    {game.durationSeconds}s
-                  </span>
-                </div>
 
-                <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
-                  {game.category}
-                </span>
-                <h3 className="font-display font-bold text-[24px] text-ink mb-2">
-                  {game.name}
-                </h3>
-                <p className="font-body text-[14px] text-mute leading-relaxed mb-4">
-                  {game.rules}
-                </p>
-              </div>
+                  <span className="font-mono text-[11px] text-mute uppercase tracking-wider block mb-1">
+                    {game.category}
+                  </span>
+                  <h3 className="font-display font-bold text-[24px] text-ink mb-2">
+                    {game.name}
+                  </h3>
+                  <p className="font-body text-[14px] text-mute leading-relaxed mb-4">
+                    {game.rules}
+                  </p>
+                </div>
 
               <div className="pt-5 border-t border-line flex items-center justify-between mt-4">
                 <span className="font-mono text-[12px] text-mute">
@@ -122,8 +139,9 @@ export default function GamesPage() {
                 </Link>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
         {/* Backlog Games Coming Soon Teaser */}
         <div className="mt-16 p-8 rounded-[28px] border border-dashed border-line bg-card/60 flex flex-col sm:flex-row items-center justify-between gap-4">

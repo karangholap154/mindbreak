@@ -1,15 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Flame, Shield, Check, Lock, ArrowRight, Truck, Info } from "lucide-react";
 import { TopNav } from "@/components/layout/TopNav";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useStreak } from "@/hooks/useStreak";
 import { StreakLadder, MILESTONES } from "@/components/rewards/StreakLadder";
+import { getDailyFeaturedGame } from "@/lib/dailySeed";
 
 export default function RewardsPage() {
   const streak = useStreak();
+  const [featuredGameId, setFeaturedGameId] = useState<string>("make24");
+
+  useEffect(() => {
+    setFeaturedGameId(getDailyFeaturedGame());
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-bg text-ink pb-24 md:pb-12">
@@ -88,7 +94,7 @@ export default function RewardsPage() {
               All Milestone Rewards
             </h2>
             <Link
-              href="/play/make24"
+              href={`/play/${featuredGameId}`}
               className="inline-flex items-center gap-1.5 font-mono text-[13px] text-acc font-semibold hover:underline"
             >
               <span>Play today’s round</span>
