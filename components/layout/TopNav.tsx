@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { Flame, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { useStreak } from "@/hooks/useStreak";
 
 export function TopNav() {
   const pathname = usePathname();
   const [muted, setMuted] = useState(true);
+  const streak = useStreak();
 
   const links = [
     { href: "/", label: "Today" },
@@ -60,11 +62,28 @@ export function TopNav() {
           </button>
 
           {/* Streak Pill */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line bg-card text-ink font-mono text-[13px] font-medium">
-            <Flame className="w-4 h-4 text-acc fill-acc" />
-            <span>0</span>
-            <span className="text-mute text-[12px]">DAYS</span>
-          </div>
+          <Link
+            href="/rewards"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line bg-card text-ink font-mono text-[13px] font-medium hover:border-ink/40 transition-colors"
+            title={`Current streak: ${streak.currentStreak} days · ${streak.freezesHeld} streak freezes held`}
+          >
+            <Flame
+              className={`w-4 h-4 ${
+                streak.isTodayCompleted
+                  ? "text-acc fill-acc animate-pulse"
+                  : streak.currentStreak > 0
+                  ? "text-acc fill-acc"
+                  : "text-mute"
+              }`}
+            />
+            <span className="font-bold">{streak.currentStreak}</span>
+            <span className="text-mute text-[11px]">DAYS</span>
+            {streak.freezesHeld > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-surface border border-line text-[10px] text-lime-ink font-bold">
+                ❄ {streak.freezesHeld}
+              </span>
+            )}
+          </Link>
 
           {/* Avatar (40px circle, lime fill, ink initial per DESIGN.md §6.10) */}
           <button

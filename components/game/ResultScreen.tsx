@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RotateCcw, ArrowRight, Share2, Flame, Shield, CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { RoundResult } from "@/games/types";
+import { useStreak } from "@/hooks/useStreak";
 
 interface ResultScreenProps {
   result: RoundResult;
@@ -12,8 +13,27 @@ interface ResultScreenProps {
 }
 
 export function ResultScreen({ result, onReplay }: ResultScreenProps) {
+  const streak = useStreak();
   // Score count-up animation
   const [displayScore, setDisplayScore] = useState(0);
+
+  const milestones = [
+    { day: 3, label: "Day 3 · Avatar Theme" },
+    { day: 7, label: "Day 7 · Streak Freeze" },
+    { day: 14, label: "Day 14 · Game Unlock" },
+    { day: 30, label: "Day 30 · Focus Master" },
+    { day: 50, label: "Day 50 · Pen & Pin Pack" },
+    { day: 100, label: "Day 100 · Desk Mug" },
+    { day: 200, label: "Day 200 · Hoodie" },
+    { day: 365, label: "Day 365 · Trophy" },
+  ];
+  const nextMilestone =
+    milestones.find((m) => m.day > streak.currentStreak) ||
+    milestones[milestones.length - 1];
+  const progressPercent = Math.min(
+    100,
+    Math.round((streak.currentStreak / nextMilestone.day) * 100)
+  );
 
   useEffect(() => {
     // Confetti celebration if score > 0
@@ -138,19 +158,33 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
           <div className="p-8 rounded-[28px] bg-ink text-surface shadow-sm flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center justify-between mb-6">
-                <span className="px-3 py-1 rounded-full bg-lime text-lime-ink font-mono text-[11px] font-bold tracking-wider uppercase">
-                  Play Day Counted
+                <span
+                  className={`px-3 py-1 rounded-full font-mono text-[11px] font-bold tracking-wider uppercase ${
+                    streak.isTodayCompleted
+                      ? "bg-lime text-lime-ink"
+                      : "bg-surface/15 text-surface"
+                  }`}
+                >
+                  {streak.isTodayCompleted
+                    ? "Play Day Counted! 🔥"
+                    : `${streak.secondsPlayedToday}s / 60s Today`}
                 </span>
                 <div className="flex items-center gap-1 font-mono text-[12px] text-[#9AA59D]">
                   <Shield className="w-3.5 h-3.5 text-lime" />
-                  <span>1 FREEZE</span>
+                  <span>{streak.freezesHeld} FREEZE</span>
                 </div>
               </div>
 
               <div className="flex items-baseline gap-3 mb-4">
-                <Flame className="w-8 h-8 text-acc fill-acc" />
+                <Flame
+                  className={`w-8 h-8 ${
+                    streak.currentStreak > 0
+                      ? "text-acc fill-acc animate-pulse"
+                      : "text-mute"
+                  }`}
+                />
                 <span className="font-mono font-bold text-[48px] sm:text-[56px] leading-none text-surface">
-                  1
+                  {streak.currentStreak}
                 </span>
                 <span className="font-mono text-[16px] text-[#9AA59D] uppercase tracking-wider">
                   Day Streak
@@ -158,7 +192,9 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
               </div>
 
               <p className="font-body text-[14px] text-[#9AA59D] leading-relaxed mb-6">
-                You’ve completed your 60-second habit for today! Consistency unlocks milestone rewards.
+                {streak.isTodayCompleted
+                  ? "You’ve completed your 60-second habit for today! Consistency unlocks milestone rewards."
+                  : `You've accumulated ${streak.secondsPlayedToday}s of play. Reach 60s total today to secure your streak!`}
               </p>
             </div>
 
@@ -166,10 +202,17 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
             <div className="pt-6 border-t border-surface/15">
               <div className="flex items-center justify-between font-mono text-[12px] mb-2">
                 <span className="text-[#9AA59D]">NEXT MILESTONE</span>
-                <span className="text-lime font-bold">Day 3 · Avatar</span>
+                <span className="text-lime font-bold">{nextMilestone.label}</span>
               </div>
               <div className="w-full h-2 rounded-full bg-surface/15 overflow-hidden">
-                <div className="h-full bg-acc rounded-full" style={{ width: "33%" }} />
+                <div
+                  className="h-full bg-acc rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between items-center mt-2 text-[11px] font-mono text-[#9AA59D]">
+                <span>{streak.currentStreak} days</span>
+                <span>{nextMilestone.day} days goal</span>
               </div>
             </div>
           </div>

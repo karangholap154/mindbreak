@@ -6,6 +6,7 @@ import { AnyGamePlugin } from "@/games/types";
 import { useGameStore } from "@/games/store";
 import { TickRing } from "@/components/brand/TickRing";
 import { ResultScreen } from "./ResultScreen";
+import { recordPlayTime } from "@/lib/streak";
 
 interface GameShellProps {
   game: AnyGamePlugin;
@@ -16,6 +17,15 @@ export function GameShell({ game }: GameShellProps) {
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0);
   const [currentPuzzle, setCurrentPuzzle] = useState(() => game.generate("today-seed", 0));
   const [isWindowFocused, setIsWindowFocused] = useState(true);
+
+  // Automatically record play time when round finishes
+  const status = store.status;
+  const result = store.result;
+  useEffect(() => {
+    if (status === "finished" && result) {
+      recordPlayTime(result.secondsPlayed);
+    }
+  }, [status, result]);
 
   // Initialize store when game prop changes
   const activeGameId = store.activeGame?.id;
@@ -40,7 +50,6 @@ export function GameShell({ game }: GameShellProps) {
   }, []);
 
   // Timer loop via requestAnimationFrame
-  const status = store.status;
   const elapsed = store.elapsed;
   const duration = store.duration;
   const setElapsed = store.setElapsed;

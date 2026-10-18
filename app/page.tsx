@@ -6,8 +6,10 @@ import { Play, Pause, RotateCcw, Flame, Sparkles, ArrowRight, Brain, Zap, Hash, 
 import { TopNav } from "@/components/layout/TopNav";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TickRing } from "@/components/brand/TickRing";
+import { useStreak } from "@/hooks/useStreak";
 
 export default function Home() {
+  const streak = useStreak();
   // Interactive test timer for the signature 60-tick stopwatch ring
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -105,12 +107,12 @@ export default function Home() {
             {/* Floating Sticker Chips */}
             <div className="absolute -top-3 -left-2 z-10 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink text-surface font-mono text-[13px] font-medium shadow-sm transform -rotate-3">
               <Flame className="w-4 h-4 text-acc fill-acc" />
-              <span>Streak: 0 days</span>
+              <span>Streak: {streak.currentStreak} {streak.currentStreak === 1 ? "day" : "days"}</span>
             </div>
 
             <div className="absolute -bottom-3 -right-2 z-10 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-lime text-lime-ink font-mono text-[13px] font-bold shadow-sm transform rotate-3">
               <Sparkles className="w-4 h-4 text-lime-ink" />
-              <span>Next reward: Day 3</span>
+              <span>Next reward: {streak.currentStreak >= 3 ? "Day 7" : "Day 3"}</span>
             </div>
 
             {/* Card Container */}
