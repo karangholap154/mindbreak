@@ -6,6 +6,7 @@ import { RotateCcw, ArrowRight, Share2, Flame, Shield, CheckCircle2 } from "luci
 import confetti from "canvas-confetti";
 import { RoundResult } from "@/games/types";
 import { useStreak } from "@/hooks/useStreak";
+import { playRoundEndSound } from "@/lib/sound";
 
 interface ResultScreenProps {
   result: RoundResult;
@@ -36,6 +37,8 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
   );
 
   useEffect(() => {
+    playRoundEndSound();
+
     // Confetti celebration if score > 0
     if (result.score > 0) {
       try {

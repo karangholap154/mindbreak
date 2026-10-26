@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Check, Eye, Play, AlertCircle, FastForward } from "lucide-react";
 import { GameProps } from "../types";
 import { PatternRecallPuzzle } from "./generator";
+import { playPatternNoteSound, playCorrectSound, playErrorSound } from "@/lib/sound";
 
 type Phase = "showing" | "input" | "success" | "error";
 
@@ -42,6 +43,7 @@ export function PatternRecallGame({
       const t1 = setTimeout(() => {
         setActiveTile(tileIdx);
         setShowProgress(i + 1);
+        playPatternNoteSound(tileIdx);
       }, 500 + i * totalStep);
 
       // Flash off
@@ -79,6 +81,7 @@ export function PatternRecallGame({
 
       // Flash tile momentarily on user press
       setActiveTile(tileIdx);
+      playPatternNoteSound(tileIdx);
       setTimeout(() => setActiveTile(null), 180);
 
       const expectedTile = puzzle.sequence[userStepIndex];
@@ -91,6 +94,7 @@ export function PatternRecallGame({
         if (nextStep === puzzle.sequence.length) {
           // Solved whole pattern!
           setPhase("success");
+          playCorrectSound();
           setTimeout(() => {
             onSolve({ level: puzzle.level });
           }, 350);
@@ -98,6 +102,7 @@ export function PatternRecallGame({
       } else {
         // Incorrect step
         setPhase("error");
+        playErrorSound();
         setTimeout(() => {
           playSequence(); // Replay same sequence so player isn't stuck
         }, 800);

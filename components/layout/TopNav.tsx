@@ -8,10 +8,11 @@ import { LogoMark } from "@/components/brand/LogoMark";
 import { useStreak } from "@/hooks/useStreak";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { useSoundEffects } from "@/lib/sound";
 
 export function TopNav() {
   const pathname = usePathname();
-  const [muted, setMuted] = useState(true);
+  const { soundEnabled, toggleSound } = useSoundEffects();
   const [authOpen, setAuthOpen] = useState(false);
   const streak = useStreak();
   const { user, profile } = useAuth();
@@ -51,17 +52,21 @@ export function TopNav() {
 
         {/* Right Action Items */}
         <div className="flex items-center gap-3">
-          {/* Sound Toggle (Off by default per DESIGN.md §9) */}
+          {/* Sound Toggle connected to Web Audio Engine */}
           <button
-            onClick={() => setMuted(!muted)}
-            className="w-10 h-10 rounded-full border border-line flex items-center justify-center text-mute hover:text-ink hover:border-ink transition-colors cursor-pointer"
-            aria-label={muted ? "Unmute game sound" : "Mute game sound"}
-            title={muted ? "Sound: Off (click to unmute)" : "Sound: On (click to mute)"}
+            onClick={toggleSound}
+            className={`w-10 h-10 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+              soundEnabled
+                ? "border-acc bg-acc/15 text-acc"
+                : "border-line text-mute hover:text-ink hover:border-ink"
+            }`}
+            aria-label={soundEnabled ? "Mute game sound" : "Unmute game sound"}
+            title={soundEnabled ? "Sound: On (click to mute)" : "Sound: Off (click to unmute)"}
           >
-            {muted ? (
-              <VolumeX className="w-4 h-4 stroke-[1.75]" />
-            ) : (
+            {soundEnabled ? (
               <Volume2 className="w-4 h-4 stroke-[1.75]" />
+            ) : (
+              <VolumeX className="w-4 h-4 stroke-[1.75]" />
             )}
           </button>
 

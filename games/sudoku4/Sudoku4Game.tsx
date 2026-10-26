@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Check, Delete, FastForward } from "lucide-react";
 import { GameProps } from "../types";
 import { Sudoku4Puzzle, isValidSudoku4 } from "./generator";
+import { playTapSound, playCorrectSound, playErrorSound } from "@/lib/sound";
 
 export function Sudoku4Game({
   puzzle,
@@ -43,6 +44,7 @@ export function Sudoku4Game({
       const [r, c] = selectedCell;
       if (isClue(r, c)) return;
 
+      playTapSound();
       const newGrid = grid.map((row) => [...row]);
       newGrid[r][c] = num;
       setGrid(newGrid);
@@ -53,10 +55,12 @@ export function Sudoku4Game({
       if (isFull) {
         if (isValidSudoku4(newGrid)) {
           setIsSuccess(true);
+          playCorrectSound();
           setTimeout(() => {
             onSolve({ grid: newGrid });
           }, 350);
         } else {
+          playErrorSound();
           setErrorCell([r, c]);
         }
       }
@@ -70,6 +74,7 @@ export function Sudoku4Game({
     const [r, c] = selectedCell;
     if (isClue(r, c)) return;
 
+    playTapSound();
     const newGrid = grid.map((row) => [...row]);
     newGrid[r][c] = 0;
     setGrid(newGrid);

@@ -16,7 +16,7 @@ interface GameState {
   result: RoundResult | null;
 
   // Actions
-  initGame: (game: AnyGamePlugin) => void;
+  initGame: (game: AnyGamePlugin, startImmediately?: boolean) => void;
   startPlaying: () => void;
   setElapsed: (elapsed: number) => void;
   recordSuccess: (points: number) => void;
@@ -39,10 +39,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   consecutiveSolves: 0,
   result: null,
 
-  initGame: (game: AnyGamePlugin) => {
+  initGame: (game: AnyGamePlugin, startImmediately: boolean = false) => {
     set({
       activeGame: game,
-      status: "tutorial",
+      status: startImmediately ? "playing" : "tutorial",
       duration: game.durationSeconds ?? 60,
       timeRemaining: game.durationSeconds ?? 60,
       elapsed: 0,
@@ -125,7 +125,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetRound: () => {
     const { activeGame } = get();
     if (activeGame) {
-      get().initGame(activeGame);
+      get().initGame(activeGame, true);
     }
   },
 }));

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Check, AlertCircle, FastForward } from "lucide-react";
 import { GameProps } from "../types";
 import { StroopPuzzle, StroopColor, STROOP_COLORS } from "./generator";
+import { playCorrectSound, playErrorSound } from "@/lib/sound";
 
 export function StroopGame({
   puzzle,
@@ -20,11 +21,13 @@ export function StroopGame({
       const isCorrect = chosenColor === puzzle.fontColor;
 
       if (isCorrect) {
+        playCorrectSound();
         setFeedback("correct");
         setTimeout(() => {
           onSolve({ selectedColor: chosenColor, correct: true });
         }, 180);
       } else {
+        playErrorSound();
         setFeedback("error");
         setTimeout(() => {
           setFeedback(null);

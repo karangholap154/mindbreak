@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { RotateCcw, FastForward, Check, AlertCircle } from "lucide-react";
 import { GameProps } from "../types";
 import { Make24Puzzle, Operator, evaluateStep } from "./generator";
+import { playTapSound, playCorrectSound, playErrorSound } from "@/lib/sound";
 
 interface TileState {
   id: string;
@@ -35,6 +36,7 @@ export function Make24Game({
   // Undo last step
   const handleUndo = useCallback(() => {
     if (history.length === 0 || disabled || isSuccess) return;
+    playTapSound();
     const previous = history[history.length - 1];
     setTiles(previous.tiles);
     setHistory((prev) => prev.slice(0, -1));
@@ -47,6 +49,7 @@ export function Make24Game({
   const handleOpClick = useCallback(
     (op: Operator) => {
       if (disabled || isSuccess) return;
+      playTapSound();
       if (!selectedTileId) {
         setErrorFeedback("Select a number first");
         return;
@@ -65,12 +68,14 @@ export function Make24Game({
 
       // If no tile selected yet, select this tile
       if (!selectedTileId) {
+        playTapSound();
         setSelectedTileId(tile.id);
         return;
       }
 
       // If clicked the same tile, deselect
       if (selectedTileId === tile.id) {
+        playTapSound();
         setSelectedTileId(null);
         setSelectedOp(null);
         return;
@@ -78,6 +83,7 @@ export function Make24Game({
 
       // If a tile is selected but no operator yet, switch selection to this new tile
       if (!selectedOp) {
+        playTapSound();
         setSelectedTileId(tile.id);
         return;
       }
@@ -90,10 +96,12 @@ export function Make24Game({
         const resultVal = evaluateStep(firstTile.value, selectedOp, tile.value);
 
         if (!isFinite(resultVal)) {
+          playErrorSound();
           setErrorFeedback("Cannot divide by 0");
           return;
         }
 
+        playTapSound();
         const newStepDesc = `${firstTile.value} ${selectedOp} ${tile.value} = ${Number(resultVal.toFixed(2))}`;
         const newHistory: StepHistory[] = [
           ...history,
@@ -119,14 +127,17 @@ export function Make24Game({
         if (nextTiles.length === 1) {
           if (Math.abs(nextTiles[0].value - 24) < 1e-4) {
             setIsSuccess(true);
+            playCorrectSound();
             setTimeout(() => {
               onSolve({ steps: newHistory.map((h) => h.description) });
             }, 350);
           } else {
+            playErrorSound();
             setErrorFeedback(`Reached ${nextTiles[0].value}, target is 24`);
           }
         }
       } catch {
+        playErrorSound();
         setErrorFeedback("Invalid operation");
       }
     },

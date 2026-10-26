@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Play, Pause, HelpCircle } from "lucide-react";
+import { Play, Pause, HelpCircle, Volume2, VolumeX, X } from "lucide-react";
 import { AnyGamePlugin } from "@/games/types";
 import { useGameStore } from "@/games/store";
 import { TickRing } from "@/components/brand/TickRing";
 import { ResultScreen } from "./ResultScreen";
 import { recordPlayTime } from "@/lib/streak";
 import { getDailyGameSeed, getTodayDateString } from "@/lib/dailySeed";
+import { useSoundEffects } from "@/lib/sound";
 
 interface GameShellProps {
   game: AnyGamePlugin;
@@ -23,21 +24,35 @@ export function GameShell({ game }: GameShellProps) {
     game.generate(getDailyGameSeed(game.id, "2026-01-01"), 0)
   );
   const [isWindowFocused, setIsWindowFocused] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
 
-  // Set real daily seed on client mount
+  const { soundEnabled, toggleSound, playCorrect, playError, playRoundEnd } = useSoundEffects();
+
+  // Unified game initialization effect
+  const initGame = store.initGame;
   useEffect(() => {
     const today = getTodayDateString();
     const realSeed = getDailyGameSeed(game.id, today);
     setDailySeed(realSeed);
     setCurrentPuzzle(game.generate(realSeed, 0));
     setCurrentPuzzleIndex(0);
-  }, [game]);
+
+    const seen = typeof window !== "undefined" && localStorage.getItem(`mindbreak_tutorial_seen_${game.id}`);
+    if (!seen) {
+      setShowTutorial(true);
+      initGame(game, false);
+    } else {
+      setShowTutorial(false);
+      initGame(game, true);
+    }
+  }, [game.id, initGame]);
 
   // Automatically record play time when round finishes & submit score to Supabase
   const status = store.status;
   const result = store.result;
   useEffect(() => {
     if (status === "finished" && result) {
+      playRoundEnd();
       recordPlayTime(result.secondsPlayed);
 
       // Submit score to backend
@@ -55,29 +70,25 @@ export function GameShell({ game }: GameShellProps) {
         console.warn("Could not sync score with server:", err);
       });
     }
-  }, [status, result, game.id]);
-
-  // Initialize store when game prop changes
-  const activeGameId = store.activeGame?.id;
-  const initGame = store.initGame;
-  useEffect(() => {
-    if (activeGameId !== game.id) {
-      initGame(game);
-      setCurrentPuzzleIndex(0);
-      setCurrentPuzzle(game.generate(dailySeed, 0));
-    }
-  }, [game, activeGameId, initGame, dailySeed]);
+  }, [status, result, game.id, playRoundEnd]);
 
   // Window blur / focus listeners (Pause on blur UX)
   useEffect(() => {
     const handleFocus = () => setIsWindowFocused(true);
-    const handleBlur = () => setIsWindowFocused(false);
+    const handleBlur = () => {
+      if (typeof document !== "undefined" && !document.hasFocus()) {
+        setIsWindowFocused(false);
+      }
+    };
+    const handlePointerDown = () => setIsWindowFocused(true);
 
     window.addEventListener("focus", handleFocus);
     window.addEventListener("blur", handleBlur);
+    window.addEventListener("pointerdown", handlePointerDown);
     return () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("pointerdown", handlePointerDown);
     };
   }, []);
 
@@ -113,6 +124,7 @@ export function GameShell({ game }: GameShellProps) {
       streak: store.consecutiveSolves,
     });
 
+    playCorrect();
     store.recordSuccess(points);
 
     // Advance to next puzzle
@@ -122,6 +134,7 @@ export function GameShell({ game }: GameShellProps) {
   };
 
   const handleSkip = () => {
+    playError();
     store.recordError(10);
     const nextIdx = currentPuzzleIndex + 1;
     setCurrentPuzzleIndex(nextIdx);
@@ -129,13 +142,34 @@ export function GameShell({ game }: GameShellProps) {
   };
 
   const handleStartRound = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`mindbreak_tutorial_seen_${game.id}`, "true");
+    }
+    setShowTutorial(false);
     store.startPlaying();
+  };
+
+  const handleOpenTutorial = () => {
+    if (store.status === "playing") {
+      store.pause();
+    }
+    setShowTutorial(true);
+  };
+
+  const handleCloseTutorial = () => {
+    setShowTutorial(false);
+    if (store.status === "paused") {
+      store.resume();
+    } else {
+      store.startPlaying();
+    }
   };
 
   const handleReplay = () => {
     store.resetRound();
     setCurrentPuzzleIndex(0);
     setCurrentPuzzle(game.generate(dailySeed, 0));
+    setShowTutorial(false);
     store.startPlaying();
   };
 
@@ -150,15 +184,46 @@ export function GameShell({ game }: GameShellProps) {
     <div className="w-full max-w-[1360px] mx-auto py-6 sm:py-8 select-none">
       {/* Mobile Top Score Strip */}
       <div className="md:hidden flex items-center justify-between p-4 mb-4 rounded-[20px] bg-card border border-line">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[12px] text-mute">SCORE:</span>
-          <span className="font-mono font-bold text-[20px] text-ink">{store.score}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[11px] text-mute">SCORE:</span>
+            <span className="font-mono font-bold text-[18px] text-ink">{store.score}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[11px] text-mute">TIME:</span>
+            <span className="font-mono font-bold text-[18px] text-acc">
+              {Math.ceil(store.timeRemaining)}s
+            </span>
+          </div>
         </div>
+
+        {/* Mobile sound and rules toggles */}
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[12px] text-mute">TIME:</span>
-          <span className="font-mono font-bold text-[20px] text-acc">
-            {Math.ceil(store.timeRemaining)}s
-          </span>
+          <button
+            onClick={toggleSound}
+            className={`p-2 rounded-full border transition-all cursor-pointer ${
+              soundEnabled
+                ? "bg-acc/15 border-acc text-acc"
+                : "bg-surface border-line text-mute"
+            }`}
+            title={soundEnabled ? "Mute sound effects" : "Turn sound ON"}
+            aria-label={soundEnabled ? "Mute sound effects" : "Turn sound ON"}
+          >
+            {soundEnabled ? (
+              <Volume2 className="w-4 h-4 text-acc" />
+            ) : (
+              <VolumeX className="w-4 h-4 text-mute" />
+            )}
+          </button>
+
+          <button
+            onClick={handleOpenTutorial}
+            className="p-2 rounded-full border border-line bg-surface text-mute hover:text-ink transition-all cursor-pointer"
+            title="View game rules"
+            aria-label="View game rules"
+          >
+            <HelpCircle className="w-4 h-4 text-mute" />
+          </button>
         </div>
       </div>
 
@@ -190,6 +255,48 @@ export function GameShell({ game }: GameShellProps) {
 
         {/* Center Column: The 60-Tick Ring and Game Area (6 cols) */}
         <section className="md:col-span-6 flex flex-col items-center order-1 md:order-2 relative">
+          {/* Desktop Controls Bar */}
+          <div className="hidden md:flex items-center justify-between w-full max-w-[480px] mb-2 px-2">
+            <span className="font-mono text-[11px] font-semibold text-mute uppercase tracking-wider">
+              {game.name} · {game.category}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleSound}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-mono transition-all cursor-pointer ${
+                  soundEnabled
+                    ? "bg-acc/15 border-acc text-ink font-semibold"
+                    : "bg-surface border-line text-mute hover:text-ink hover:border-ink/40"
+                }`}
+                title={soundEnabled ? "Mute sound effects" : "Turn sound effects ON"}
+                aria-label={soundEnabled ? "Mute sound effects" : "Turn sound effects ON"}
+              >
+                {soundEnabled ? (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-acc" />
+                    <span>SOUND ON</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5 text-mute" />
+                    <span>MUTED</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleOpenTutorial}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-line bg-surface hover:border-ink/40 text-mute hover:text-ink font-mono text-[11px] transition-all cursor-pointer"
+                title="View game rules and keyboard hints"
+                aria-label="View game rules and tutorial"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-mute" />
+                <span>RULES</span>
+              </button>
+            </div>
+          </div>
+
           {/* Pause on blur dim overlay */}
           {!isWindowFocused && store.status === "playing" && (
             <div className="absolute inset-0 z-30 bg-bg/90 backdrop-blur-sm rounded-[28px] border border-line flex flex-col items-center justify-center p-8 text-center animate-fade-in">
@@ -209,63 +316,100 @@ export function GameShell({ game }: GameShellProps) {
             </div>
           )}
 
-          {/* 5-second Tutorial Overlay for First Play */}
-          {store.status === "tutorial" && (
-            <div className="w-full max-w-[480px] p-8 sm:p-10 rounded-[28px] bg-card border border-line shadow-hero flex flex-col items-center text-center my-6 animate-fade-in">
-              <div className="w-12 h-12 rounded-full bg-lime text-lime-ink flex items-center justify-center mb-4">
+          {/* 5-second Tutorial Overlay for First Play (PRD §7.4, DESIGN §15) */}
+          {showTutorial && (
+            <div className="absolute inset-0 z-40 bg-bg/95 backdrop-blur-md rounded-[28px] border border-line flex flex-col items-center justify-center p-6 sm:p-10 text-center animate-fade-in">
+              <div className="w-12 h-12 rounded-full bg-lime text-lime-ink flex items-center justify-center mb-4 shadow-xs">
                 <HelpCircle className="w-6 h-6 stroke-[2]" />
               </div>
-              <h2 className="font-display font-bold text-[28px] text-ink mb-2">
+
+              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-card border border-line font-mono text-[11px] text-mute uppercase tracking-wider mb-2">
+                {game.category} · 60-Second Round
+              </div>
+
+              <h2 className="font-display font-bold text-[28px] sm:text-[34px] text-ink mb-2">
                 Ready for {game.name}?
               </h2>
-              <p className="font-body text-[15px] text-mute mb-8 max-w-[340px]">
-                You have exactly 60 seconds. Combine numbers to reach 24 as many times as you can!
+
+              <p className="font-body text-[15px] sm:text-[16px] text-ink font-medium max-w-[420px] mb-2 leading-relaxed">
+                {game.rules}
               </p>
-              <button
-                onClick={handleStartRound}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-acc text-ink font-bold text-[17px] shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer"
-              >
-                <Play className="w-5 h-5 fill-ink" />
-                <span>Start 60s Round</span>
-              </button>
+
+              <p className="font-mono text-[13px] text-mute mb-6 max-w-[360px]">
+                Objective: <span className="font-semibold text-ink">{game.targetDescription}</span>
+              </p>
+
+              {/* Keyboard / gesture badges */}
+              {game.keyboardHints && game.keyboardHints.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-8 max-w-[440px]">
+                  {game.keyboardHints.map((hint, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 rounded-full bg-surface border border-line font-mono text-[11px] text-mute font-medium shadow-xs"
+                    >
+                      {hint}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={store.status === "paused" ? handleCloseTutorial : handleStartRound}
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-acc text-ink font-bold text-[16px] shadow-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Play className="w-5 h-5 fill-ink" />
+                  <span>{store.status === "paused" ? "Resume Round" : "Start 60s Round"}</span>
+                </button>
+
+                {store.status === "paused" && (
+                  <button
+                    onClick={handleCloseTutorial}
+                    className="p-3.5 rounded-full border border-line bg-surface text-mute hover:text-ink hover:border-ink/40 transition-all cursor-pointer"
+                    title="Close rules"
+                    aria-label="Close rules"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
           {/* Active Gameplay Arena */}
-          {store.status !== "tutorial" && (
-            <div className="w-full flex flex-col items-center">
-              {/* Ring Container with Countdown Numerals */}
-              <div className="w-[280px] sm:w-[360px] my-4 relative flex items-center justify-center">
-                <TickRing
-                  viewBoxSize={440}
-                  radius={200}
-                  tickWidth={3}
-                  tickLength={22}
-                  elapsed={store.elapsed}
-                  total={store.duration}
-                  showIndicatorDot={true}
-                >
-                  <div className="text-center">
-                    <span className="font-mono font-medium text-[72px] sm:text-[90px] leading-none tracking-[-0.05em] text-ink block">
-                      {Math.ceil(store.timeRemaining).toString().padStart(2, "0")}
-                    </span>
-                    <span className="font-mono text-[13px] font-medium text-mute tracking-widest uppercase block mt-1">
-                      SECONDS LEFT
-                    </span>
-                  </div>
-                </TickRing>
-              </div>
+          <div className="w-full flex flex-col items-center">
+            {/* Ring Container with Countdown Numerals */}
+            <div className="w-[280px] sm:w-[360px] my-4 relative flex items-center justify-center">
+              <TickRing
+                viewBoxSize={440}
+                radius={200}
+                tickWidth={3}
+                tickLength={22}
+                elapsed={store.elapsed}
+                total={store.duration}
+                showIndicatorDot={true}
+              >
+                <div className="text-center">
+                  <span className="font-mono font-medium text-[72px] sm:text-[90px] leading-none tracking-[-0.05em] text-ink block">
+                    {Math.ceil(store.timeRemaining).toString().padStart(2, "0")}
+                  </span>
+                  <span className="font-mono text-[13px] font-medium text-mute tracking-widest uppercase block mt-1">
+                    SECONDS LEFT
+                  </span>
+                </div>
+              </TickRing>
+            </div>
 
-              {/* Game Plugin Play Area - key forces clean remount per puzzle */}
-              <div className="w-full max-w-[480px] p-6 rounded-[28px] bg-card border border-line shadow-sm mt-2">
-                <GameComponent
-                  key={(currentPuzzle as { id?: string })?.id || currentPuzzleIndex}
-                  puzzle={currentPuzzle}
-                  onSolve={handleSolve}
-                  onSkip={handleSkip}
-                  disabled={store.status !== "playing"}
-                />
-              </div>
+            {/* Game Plugin Play Area - key forces clean remount per puzzle */}
+            <div className="w-full max-w-[480px] p-6 rounded-[28px] bg-card border border-line shadow-sm mt-2">
+              <GameComponent
+                key={(currentPuzzle as { id?: string })?.id || currentPuzzleIndex}
+                puzzle={currentPuzzle}
+                onSolve={handleSolve}
+                onSkip={handleSkip}
+                disabled={store.status !== "playing"}
+              />
+            </div>
 
               {/* Optional Finish Early button once at least 1 puzzle is solved */}
               {store.puzzlesSolved > 0 && (
@@ -277,8 +421,7 @@ export function GameShell({ game }: GameShellProps) {
                 </button>
               )}
             </div>
-          )}
-        </section>
+          </section>
 
         {/* Right Column: Score Card & Key Hints (3 cols) */}
         <aside className="md:col-span-3 flex flex-col gap-4 order-3">
