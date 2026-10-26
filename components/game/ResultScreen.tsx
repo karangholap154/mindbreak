@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { RoundResult } from "@/games/types";
 import { useStreak } from "@/hooks/useStreak";
 import { playRoundEndSound } from "@/lib/sound";
+import { ShareModal } from "./ShareModal";
 
 interface ResultScreenProps {
   result: RoundResult;
@@ -17,6 +18,7 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
   const streak = useStreak();
   // Score count-up animation
   const [displayScore, setDisplayScore] = useState(0);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const milestones = [
     { day: 3, label: "Day 3 · Avatar Theme" },
@@ -128,31 +130,30 @@ export function ResultScreen({ result, onReplay }: ResultScreenProps) {
               <span>Play again</span>
             </button>
 
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border-[1.5px] border-ink bg-surface text-ink font-bold text-[15px] hover:bg-card active:scale-95 transition-all cursor-pointer shadow-xs"
+            >
+              <Share2 className="w-4 h-4 text-acc stroke-[2.2]" />
+              <span>Share Score</span>
+            </button>
+
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border-[1.5px] border-ink bg-transparent text-ink font-semibold text-[15px] hover:bg-card active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-line bg-card text-mute hover:text-ink font-semibold text-[15px] hover:border-ink/40 active:scale-95 transition-all cursor-pointer"
             >
               <span>Back to home</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
-
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: "Mind Break",
-                    text: `I scored ${result.score} points on Mind Break's ${result.gameName}! Can you beat it?`,
-                    url: window.location.href,
-                  });
-                }
-              }}
-              className="p-3.5 rounded-full border border-line bg-card text-mute hover:text-ink hover:border-ink transition-colors cursor-pointer"
-              aria-label="Share score"
-              title="Share score"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
           </div>
+
+          {/* Share Result Card Modal */}
+          <ShareModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            result={result}
+            streakCount={streak.currentStreak}
+          />
         </div>
 
         {/* Right Column: Streak Progress & Rewards (5 cols) */}
