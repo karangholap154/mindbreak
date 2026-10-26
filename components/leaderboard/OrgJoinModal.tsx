@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Building2, GraduationCap, Users, ArrowRight, CheckCircle2, Plus } from "lucide-react";
+import { X, Building2, GraduationCap, Users, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-
 import { useMounted } from "@/hooks/useMounted";
 
 interface Organization {
@@ -21,6 +20,24 @@ interface OrgJoinModalProps {
   onJoined: () => void;
 }
 
+const COMPANY_DEPARTMENTS = [
+  "Engineering",
+  "Product & Design",
+  "Marketing & Growth",
+  "Sales & Business",
+  "Operations & HR",
+  "Finance & Legal",
+];
+
+const COLLEGE_YEARS = [
+  "Class of 2025 (Senior)",
+  "Class of 2026 (Junior)",
+  "Class of 2027 (Sophomore)",
+  "Class of 2028 (Freshman)",
+  "Postgraduate / Masters",
+  "Faculty & Staff",
+];
+
 export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
   const { user } = useAuth();
   const [tab, setTab] = useState<"code" | "browse" | "create">("code");
@@ -30,6 +47,11 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Department / Graduation Year state
+  const [department, setDepartment] = useState("Engineering");
+  const [customDept, setCustomDept] = useState("");
+  const [isCustomDept, setIsCustomDept] = useState(false);
 
   // Create form state
   const [newName, setNewName] = useState("");
@@ -59,6 +81,10 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
 
   if (!isOpen || !mounted) return null;
 
+  const resolvedDepartment = isCustomDept
+    ? customDept.trim() || department
+    : department;
+
   const handleJoinByCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim()) return;
@@ -70,13 +96,16 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
       const res = await fetch("/api/orgs/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteCode }),
+        body: JSON.stringify({
+          inviteCode,
+          department: resolvedDepartment,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(data.error || "Failed to join team.");
       } else {
-        setSuccessMsg(`Joined ${data.organization.name}!`);
+        setSuccessMsg(`Joined ${data.organization.name} (${resolvedDepartment})!`);
         onJoined();
         setTimeout(() => onClose(), 1200);
       }
@@ -87,23 +116,30 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
     }
   };
 
-  const handleJoinDirect = async (orgId: string, orgName: string) => {
+  const handleJoinDirect = async (orgId: string, orgName: string, orgType: "college" | "company" | "community") => {
     setLoading(true);
     setErrorMsg(null);
+
+    const defaultDept = orgType === "college" ? "Class of 2026 (Junior)" : "Engineering";
+    const deptToSave = resolvedDepartment || defaultDept;
 
     try {
       const res = await fetch("/api/orgs/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId }),
+        body: JSON.stringify({
+          orgId,
+          department: deptToSave,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(data.error || "Failed to join team.");
       } else {
-        setSuccessMsg(`Joined ${orgName}!`);
+        setSuccessMsg(`Joined ${orgName} (${deptToSave})!`);
         setUserOrgIds((prev) => [...prev, orgId]);
         onJoined();
+        setTimeout(() => onClose(), 1200);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
@@ -123,7 +159,12 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
       const res = await fetch("/api/orgs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName, type: newType, domain: newDomain }),
+        body: JSON.stringify({
+          name: newName,
+          type: newType,
+          domain: newDomain,
+          department: resolvedDepartment,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -149,7 +190,7 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-[480px] my-auto p-7 sm:p-9 rounded-[28px] bg-card border border-line shadow-2xl">
+      <div className="relative w-full max-w-[500px] my-auto p-7 sm:p-9 rounded-[28px] bg-card border border-line shadow-2xl max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -168,7 +209,7 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
           Join your College or Workplace
         </h2>
         <p className="font-body text-[13.5px] text-mute leading-relaxed mb-6">
-          Represent your university or company on aggregate daily leaderboards and compete with peers.
+          Represent your university or company on aggregate daily leaderboards and compete in department rivalry.
         </p>
 
         {/* Tab switchers */}
@@ -223,6 +264,63 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
           </div>
         ) : (
           <>
+            {/* Department Selection Selector (Shared across Code and Browse) */}
+            <div className="mb-6 p-4 rounded-[20px] bg-surface border border-line">
+              <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-2">
+                Select Your Department or Year Cohort
+              </label>
+
+              {/* Department chips */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {(tab === "code" || newType === "college"
+                  ? COLLEGE_YEARS.concat(COMPANY_DEPARTMENTS)
+                  : COMPANY_DEPARTMENTS
+                ).slice(0, 8).map((dept) => {
+                  const isSelected = !isCustomDept && department === dept;
+                  return (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => {
+                        setDepartment(dept);
+                        setIsCustomDept(false);
+                      }}
+                      className={`px-3 py-1 rounded-full text-[12px] font-mono transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-acc text-ink font-bold shadow-xs"
+                          : "bg-card border border-line text-mute hover:text-ink hover:border-ink/40"
+                      }`}
+                    >
+                      {dept}
+                    </button>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => setIsCustomDept(true)}
+                  className={`px-3 py-1 rounded-full text-[12px] font-mono transition-all cursor-pointer ${
+                    isCustomDept
+                      ? "bg-ink text-surface font-bold"
+                      : "bg-card border border-line text-mute hover:text-ink"
+                  }`}
+                >
+                  Other...
+                </button>
+              </div>
+
+              {isCustomDept && (
+                <input
+                  type="text"
+                  value={customDept}
+                  onChange={(e) => setCustomDept(e.target.value)}
+                  placeholder="Enter your department or year (e.g. Design, Class of 2029)"
+                  className="w-full px-3.5 py-2.5 rounded-[12px] bg-card border border-line text-[13px] font-body text-ink focus:outline-none focus:border-ink"
+                  autoFocus
+                />
+              )}
+            </div>
+
             {/* Tab 1: Enter 6-char Invite Code */}
             {tab === "code" && (
               <form onSubmit={handleJoinByCode} className="space-y-4">
@@ -295,7 +393,7 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleJoinDirect(o.id, o.name)}
+                            onClick={() => handleJoinDirect(o.id, o.name, o.type)}
                             disabled={loading}
                             className="px-3.5 py-1.5 rounded-full border border-line bg-card hover:bg-surface text-ink font-mono text-[12px] font-semibold transition-all cursor-pointer shadow-xs disabled:opacity-50"
                           >
@@ -311,51 +409,49 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
 
             {/* Tab 3: Create Team */}
             {tab === "create" && (
-              <form onSubmit={handleCreateOrg} className="space-y-3.5">
+              <form onSubmit={handleCreateOrg} className="space-y-4">
                 <div>
-                  <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1">
-                    Team / Institution Name
+                  <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1.5">
+                    Team or Institution Name
                   </label>
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Oxford University or Stripe"
-                    className="w-full px-4 py-2.5 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink"
+                    className="w-full px-4 py-3 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1">
+                    <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1.5">
                       Type
                     </label>
                     <select
                       value={newType}
                       onChange={(e) =>
-                        setNewType(
-                          e.target.value as "college" | "company" | "community"
-                        )
+                        setNewType(e.target.value as "college" | "company" | "community")
                       }
-                      className="w-full px-3 py-2.5 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink cursor-pointer"
+                      className="w-full px-3.5 py-3 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink cursor-pointer"
                     >
                       <option value="college">College / University</option>
                       <option value="company">Company / Workplace</option>
-                      <option value="community">Community</option>
+                      <option value="community">Community / Club</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1">
-                      Domain (Optional)
+                    <label className="block font-mono text-[11px] font-semibold text-mute uppercase tracking-wider mb-1.5">
+                      Email Domain (optional)
                     </label>
                     <input
                       type="text"
                       value={newDomain}
                       onChange={(e) => setNewDomain(e.target.value)}
-                      placeholder="ox.ac.uk"
-                      className="w-full px-4 py-2.5 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink"
+                      placeholder="e.g. oxford.ac.uk"
+                      className="w-full px-3.5 py-3 rounded-[14px] bg-surface border border-line text-ink font-body text-[14px] focus:outline-none focus:border-ink"
                     />
                   </div>
                 </div>
@@ -363,10 +459,10 @@ export function OrgJoinModal({ isOpen, onClose, onJoined }: OrgJoinModalProps) {
                 <button
                   type="submit"
                   disabled={loading || !newName.trim()}
-                  className="w-full flex items-center justify-center gap-2 mt-4 py-3.5 rounded-full bg-acc text-ink font-bold text-[15px] shadow-sm hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-acc text-ink font-bold text-[15px] shadow-sm hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50 mt-2"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>{loading ? "Creating..." : "Create Team & Get Code"}</span>
+                  <span>{loading ? "Creating team..." : "Create Team"}</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                 </button>
               </form>
             )}

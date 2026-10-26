@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { inviteCode, orgId } = body;
+    const { inviteCode, orgId, department } = body;
 
     let targetOrgId = orgId;
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       const code = inviteCode.trim().toUpperCase();
       const { data: org, error: findErr } = await admin
         .from("organizations")
-        .select("id, name")
+        .select("id, name, type")
         .eq("invite_code", code)
         .maybeSingle();
 
@@ -36,12 +36,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Please provide an invite code or organization." }, { status: 400 });
     }
 
-    // Insert membership
+    // Insert or update membership with department/cohort
     const { error: joinErr } = await admin.from("memberships").upsert(
       {
         user_id: user.id,
         org_id: targetOrgId,
         role: "member",
+        department: department?.trim() || null,
       },
       { onConflict: "user_id, org_id" }
     );

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Clock, Globe, GraduationCap, Building2, Flame } from "lucide-react";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { OrgJoinModal } from "@/components/leaderboard/OrgJoinModal";
-import { LeaderboardEntry, OrgLeaderboardEntry } from "@/app/api/leaderboards/route";
+import { LeaderboardEntry, OrgLeaderboardEntry, DepartmentLeaderboardEntry } from "@/app/api/leaderboards/route";
 
 const GAME_TABS = [
   { id: "all", label: "All Games" },
@@ -19,6 +19,7 @@ export default function LeaderboardsPage() {
   const [gameId, setGameId] = useState("all");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [orgRankings, setOrgRankings] = useState<OrgLeaderboardEntry[]>([]);
+  const [departmentRankings, setDepartmentRankings] = useState<DepartmentLeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<{ rank: number; score: number; percentile: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
@@ -61,6 +62,8 @@ export default function LeaderboardsPage() {
         else setEntries([]);
         if (data.orgRankings) setOrgRankings(data.orgRankings);
         else setOrgRankings([]);
+        if (data.departmentRankings) setDepartmentRankings(data.departmentRankings);
+        else setDepartmentRankings([]);
         if (data.userRank) setUserRank(data.userRank);
         else setUserRank(null);
         setLoading(false);
@@ -175,6 +178,7 @@ export default function LeaderboardsPage() {
         scope={scope}
         entries={entries}
         orgRankings={orgRankings}
+        departmentRankings={departmentRankings}
         loading={loading}
         userRank={userRank}
         onOpenOrgModal={() => setOrgModalOpen(true)}

@@ -13,6 +13,7 @@ export interface LeaderboardEntry {
   puzzlesSolved: number;
   orgName?: string;
   orgType?: "college" | "company" | "community";
+  department?: string | null;
 }
 
 export interface OrgLeaderboardEntry {
@@ -21,6 +22,22 @@ export interface OrgLeaderboardEntry {
   name: string;
   type: "college" | "company" | "community";
   memberCount: number;
+  activeCount: number;
+  participationRate: number;
+  totalScore: number;
+  avgScore: number;
+  topScore: number;
+}
+
+export interface DepartmentLeaderboardEntry {
+  rank: number;
+  department: string;
+  orgId?: string;
+  orgName: string;
+  orgType: "college" | "company" | "community";
+  memberCount: number;
+  activeCount: number;
+  participationRate: number;
   totalScore: number;
   avgScore: number;
   topScore: number;
@@ -31,11 +48,12 @@ interface OrgQueryResult {
   name: string;
   type: "college" | "company" | "community";
   invite_code: string;
-  memberships: { user_id: string }[] | null;
+  memberships: { user_id: string; department?: string | null }[] | null;
 }
 
 interface MembershipQueryResult {
   user_id: string;
+  department?: string | null;
   organizations: {
     name: string;
     type: "college" | "company" | "community";
@@ -47,6 +65,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const gameId = searchParams.get("gameId") || "all";
     const scope = (searchParams.get("scope") || "global") as "global" | "college" | "company";
+    const departmentFilter = searchParams.get("department") || null;
     const date = searchParams.get("date") || getTodayDateString();
 
     const admin = createAdminClient();
@@ -55,7 +74,7 @@ export async function GET(req: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // 1. If scope is "college" or "company": Return Organization Rankings
+    // 1. If scope is "college" or "company": Return Organization & Department Rankings
     if (scope === "college" || scope === "company") {
       const { data: orgs, error: orgErr } = await admin
         .from("organizations")
@@ -65,7 +84,8 @@ export async function GET(req: NextRequest) {
           type,
           invite_code,
           memberships (
-            user_id
+            user_id,
+            department
           )
         `)
         .eq("type", scope);
@@ -89,6 +109,7 @@ export async function GET(req: NextRequest) {
 
       const typedOrgs = (orgs || []) as unknown as OrgQueryResult[];
 
+      // Collect Organization Rankings
       const orgRankings: OrgLeaderboardEntry[] = typedOrgs.map((org) => {
         const members = org.memberships || [];
         const memberCount = members.length;
@@ -106,6 +127,7 @@ export async function GET(req: NextRequest) {
         }
 
         const avgScore = activeCount > 0 ? Math.round(totalScore / activeCount) : 0;
+        const participationRate = memberCount > 0 ? Math.round((activeCount / memberCount) * 100) : 0;
 
         return {
           rank: 0,
@@ -113,6 +135,8 @@ export async function GET(req: NextRequest) {
           name: org.name,
           type: org.type,
           memberCount,
+          activeCount,
+          participationRate,
           totalScore,
           avgScore,
           topScore,
@@ -123,11 +147,77 @@ export async function GET(req: NextRequest) {
       orgRankings.sort((a, b) => b.avgScore - a.avgScore || b.memberCount - a.memberCount);
       orgRankings.forEach((o, idx) => (o.rank = idx + 1));
 
+      // Collect Department & Graduation Year Rankings
+      // Group by (orgId, department)
+      const deptMap = new Map<string, {
+        department: string;
+        orgId: string;
+        orgName: string;
+        orgType: "college" | "company" | "community";
+        memberCount: number;
+        activeCount: number;
+        totalScore: number;
+        topScore: number;
+      }>();
+
+      for (const org of typedOrgs) {
+        for (const m of org.memberships || []) {
+          const deptKey = `${org.id}::${m.department || (org.type === "college" ? "Class of 2026" : "General")}`;
+          const deptName = m.department || (org.type === "college" ? "Class of 2026" : "General");
+
+          if (!deptMap.has(deptKey)) {
+            deptMap.set(deptKey, {
+              department: deptName,
+              orgId: org.id,
+              orgName: org.name,
+              orgType: org.type,
+              memberCount: 0,
+              activeCount: 0,
+              totalScore: 0,
+              topScore: 0,
+            });
+          }
+
+          const dObj = deptMap.get(deptKey)!;
+          dObj.memberCount++;
+
+          const sc = userScoresMap.get(m.user_id);
+          if (sc !== undefined) {
+            dObj.activeCount++;
+            dObj.totalScore += sc;
+            if (sc > dObj.topScore) dObj.topScore = sc;
+          }
+        }
+      }
+
+      const departmentRankings: DepartmentLeaderboardEntry[] = Array.from(deptMap.values()).map((d) => {
+        const avgScore = d.activeCount > 0 ? Math.round(d.totalScore / d.activeCount) : 0;
+        const participationRate = d.memberCount > 0 ? Math.round((d.activeCount / d.memberCount) * 100) : 0;
+        return {
+          rank: 0,
+          department: d.department,
+          orgId: d.orgId,
+          orgName: d.orgName,
+          orgType: d.orgType,
+          memberCount: d.memberCount,
+          activeCount: d.activeCount,
+          participationRate,
+          totalScore: d.totalScore,
+          avgScore,
+          topScore: d.topScore,
+        };
+      });
+
+      // Sort departments by avgScore desc, then participationRate desc
+      departmentRankings.sort((a, b) => b.avgScore - a.avgScore || b.participationRate - a.participationRate);
+      departmentRankings.forEach((d, idx) => (d.rank = idx + 1));
+
       return NextResponse.json({
         scope,
         date,
         gameId,
         orgRankings,
+        departmentRankings,
       });
     }
 
@@ -165,17 +255,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Fetch user memberships to attach institutional badges (e.g. Stanford, Google)
+    // Fetch user memberships to attach institutional badges and departments
     const { data: allMemberships } = await admin
       .from("memberships")
-      .select("user_id, organizations (name, type)");
+      .select("user_id, department, organizations (name, type)");
 
     const typedMemberships = (allMemberships || []) as unknown as MembershipQueryResult[];
-    const userOrgMap = new Map<string, { name: string; type: "college" | "company" | "community" }>();
+    const userOrgMap = new Map<string, { name: string; type: "college" | "company" | "community"; department?: string | null }>();
     for (const m of typedMemberships) {
       const org = m.organizations;
       if (org) {
-        userOrgMap.set(m.user_id, { name: org.name, type: org.type });
+        userOrgMap.set(m.user_id, { name: org.name, type: org.type, department: m.department });
       }
     }
 
@@ -190,6 +280,11 @@ export async function GET(req: NextRequest) {
       const prof = profileMap.get(s.user_id);
       const org = userOrgMap.get(s.user_id);
 
+      // Filter by department if requested
+      if (departmentFilter && org?.department !== departmentFilter) {
+        continue;
+      }
+
       entries.push({
         rank: entries.length + 1,
         userId: s.user_id,
@@ -201,6 +296,7 @@ export async function GET(req: NextRequest) {
         puzzlesSolved: s.puzzles_solved || 0,
         orgName: org?.name,
         orgType: org?.type,
+        department: org?.department,
       });
     }
 

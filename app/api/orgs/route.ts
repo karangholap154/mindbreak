@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, type, domain } = body;
+    const { name, type, domain, department } = body;
 
     if (!name || !type) {
       return NextResponse.json({ error: "Organization name and type are required." }, { status: 400 });
@@ -80,11 +80,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: orgErr.message }, { status: 500 });
     }
 
-    // Automatically join creator as admin
+    // Automatically join creator as admin with their department
     await admin.from("memberships").insert({
       user_id: user.id,
       org_id: newOrg.id,
       role: "admin",
+      department: department?.trim() || null,
     });
 
     return NextResponse.json({
